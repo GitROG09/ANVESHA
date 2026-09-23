@@ -1,0 +1,120 @@
+{
+  "experiment_id": "ultrasonic_001",
+  "title": "HC-SR04 Ultrasonic Distance Measurement",
+  "objective": "Verify an HC-SR04 ultrasonic sensor is wired with correct trigger/echo pins and returns a plausible distance reading.",
+  "difficulty": "beginner",
+  "safety_notes": [
+    "5V logic only.",
+    "Echo pin should be used with a voltage divider if the board is 3.3V logic (not required for standard 5V Arduino UNO)."
+  ],
+  "components": [
+    "Arduino",
+    "HC-SR04",
+    "breadboard",
+    "jumper_wires"
+  ],
+  "connections": [
+    {
+      "from": "HC-SR04",
+      "from_pin": "VCC",
+      "to": "Arduino",
+      "to_pin": "5V"
+    },
+    {
+      "from": "HC-SR04",
+      "from_pin": "TRIG",
+      "to": "Arduino",
+      "to_pin": "D9"
+    },
+    {
+      "from": "HC-SR04",
+      "from_pin": "ECHO",
+      "to": "Arduino",
+      "to_pin": "D10"
+    },
+    {
+      "from": "HC-SR04",
+      "from_pin": "GND",
+      "to": "Arduino",
+      "to_pin": "GND"
+    }
+  ],
+  "steps": [
+    {
+      "step_id": "s1",
+      "title": "Mount the sensor",
+      "instruction": "Place the HC-SR04 module on the breadboard or fixture with a clear line of sight to the target.",
+      "checks": [
+        "r_component_present"
+      ]
+    },
+    {
+      "step_id": "s2",
+      "title": "Wire trigger and echo",
+      "instruction": "Connect TRIG to D9 and ECHO to D10 on the Arduino.",
+      "checks": [
+        "r_trig_echo_pins"
+      ]
+    },
+    {
+      "step_id": "s3",
+      "title": "Power the sensor",
+      "instruction": "Connect VCC to 5V and GND to GND.",
+      "checks": [
+        "r_power_connections"
+      ]
+    },
+    {
+      "step_id": "s4",
+      "title": "Measure distance",
+      "instruction": "Place an object roughly 10-100 cm away and confirm the reported distance is plausible.",
+      "checks": [
+        "r_measurement_range"
+      ]
+    }
+  ],
+  "expected_measurements": [
+    {
+      "sensor": "HC-SR04",
+      "unit": "cm",
+      "min_value": 2,
+      "max_value": 400,
+      "description": "Valid HC-SR04 operating range."
+    }
+  ],
+  "validation_rules": [
+    {
+      "rule_id": "r_component_present",
+      "description": "HC-SR04 module must be present.",
+      "rule_type": "connection",
+      "target": "components",
+      "severity": "deviation"
+    },
+    {
+      "rule_id": "r_trig_echo_pins",
+      "description": "TRIG must go to D9 and ECHO must go to D10.",
+      "rule_type": "connection",
+      "target": "HC-SR04->Arduino",
+      "severity": "deviation"
+    },
+    {
+      "rule_id": "r_power_connections",
+      "description": "VCC/GND must be correctly wired.",
+      "rule_type": "connection",
+      "target": "power",
+      "severity": "warning"
+    },
+    {
+      "rule_id": "r_measurement_range",
+      "description": "Distance reading must fall within the sensor's valid operating range.",
+      "rule_type": "measurement",
+      "target": "HC-SR04",
+      "severity": "deviation"
+    }
+  ],
+  "troubleshooting": {
+    "reading_always_0": "TRIG and ECHO pins may be swapped.",
+    "reading_always_max": "Check for a loose GND connection or an obstructed sensor face.",
+    "erratic_readings": "Target surface may be too soft/angled to reflect the pulse; try a flat hard surface."
+  }
+}

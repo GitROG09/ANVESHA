@@ -1,0 +1,115 @@
+{
+  "experiment_id": "led_001",
+  "title": "LED Current-Limiting Resistor Circuit",
+  "objective": "Verify an LED is wired in series with a current-limiting resistor to a digital output pin, with correct polarity.",
+  "difficulty": "beginner",
+  "safety_notes": [
+    "Always use a current-limiting resistor (220-330 ohm) with an LED on 5V logic.",
+    "Never connect an LED directly across 5V and GND without a resistor."
+  ],
+  "components": [
+    "Arduino",
+    "LED",
+    "resistor_220",
+    "breadboard",
+    "jumper_wires"
+  ],
+  "connections": [
+    {
+      "from": "Arduino",
+      "from_pin": "D8",
+      "to": "resistor_220",
+      "to_pin": "1"
+    },
+    {
+      "from": "resistor_220",
+      "from_pin": "2",
+      "to": "LED",
+      "to_pin": "anode"
+    },
+    {
+      "from": "LED",
+      "from_pin": "cathode",
+      "to": "Arduino",
+      "to_pin": "GND"
+    }
+  ],
+  "steps": [
+    {
+      "step_id": "s1",
+      "title": "Place LED and resistor",
+      "instruction": "Insert the LED and a 220 ohm resistor on the breadboard in series.",
+      "checks": [
+        "r_components_present"
+      ]
+    },
+    {
+      "step_id": "s2",
+      "title": "Connect digital output through the resistor",
+      "instruction": "Connect Arduino D8 to one leg of the resistor.",
+      "checks": [
+        "r_pin_to_resistor"
+      ]
+    },
+    {
+      "step_id": "s3",
+      "title": "Connect LED with correct polarity",
+      "instruction": "Connect the resistor's other leg to the LED anode (longer leg), and the LED cathode (shorter leg) to GND.",
+      "checks": [
+        "r_led_polarity"
+      ]
+    },
+    {
+      "step_id": "s4",
+      "title": "Confirm illumination",
+      "instruction": "Drive D8 HIGH and confirm the LED lights without excessive current draw.",
+      "checks": [
+        "r_measurement_range"
+      ]
+    }
+  ],
+  "expected_measurements": [
+    {
+      "sensor": "LED_current",
+      "unit": "mA",
+      "min_value": 8,
+      "max_value": 20,
+      "description": "Safe forward current range for a standard 5mm LED with a 220ohm resistor at 5V."
+    }
+  ],
+  "validation_rules": [
+    {
+      "rule_id": "r_components_present",
+      "description": "LED and 220 ohm resistor must both be present.",
+      "rule_type": "connection",
+      "target": "components",
+      "severity": "deviation"
+    },
+    {
+      "rule_id": "r_pin_to_resistor",
+      "description": "D8 must connect to the resistor, not directly to the LED.",
+      "rule_type": "connection",
+      "target": "Arduino->resistor_220",
+      "severity": "deviation"
+    },
+    {
+      "rule_id": "r_led_polarity",
+      "description": "LED anode must face the resistor/supply side; cathode must face GND.",
+      "rule_type": "connection",
+      "target": "resistor_220->LED",
+      "severity": "deviation"
+    },
+    {
+      "rule_id": "r_measurement_range",
+      "description": "Measured forward current must be in the safe operating range.",
+      "rule_type": "measurement",
+      "target": "LED_current",
+      "severity": "warning"
+    }
+  ],
+  "troubleshooting": {
+    "led_not_lighting": "LED polarity may be reversed, or the digital pin was never driven HIGH.",
+    "led_dim": "Resistor value may be too high, or the pin is not fully HIGH.",
+    "led_very_bright_hot": "Resistor may be missing or too low in value \u2014 disconnect immediately."
+  }
+}

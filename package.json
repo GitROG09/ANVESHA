@@ -1,0 +1,13 @@
+{
+  "name": "anvesha-ai",
+  "private": true,
+  "version": "0.1.0",
+  "description": "On-device multimodal AI for physical experiment verification. Snapdragon AI Lab Build & Present Challenge submission.",
+  "scripts": {
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "backend:dev": "uvicorn backend.api.main:app --host 127.0.0.1 --port 8000 --reload",
+    "test": "bash scripts/run_tests.sh",
+    "benchmark": "python benchmarks/benchmark.py --runs 30"
+  }
+}

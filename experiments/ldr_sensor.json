@@ -1,0 +1,121 @@
+{
+  "experiment_id": "ldr_001",
+  "title": "LDR Light Sensor Calibration",
+  "objective": "Verify a photoresistor (LDR) voltage-divider circuit is wired correctly and reads a plausible analog value from ambient light.",
+  "difficulty": "beginner",
+  "safety_notes": [
+    "5V logic only. No mains voltage.",
+    "Do not short Arduino 5V directly to GND."
+  ],
+  "components": [
+    "Arduino",
+    "LDR",
+    "resistor_10k",
+    "breadboard",
+    "jumper_wires"
+  ],
+  "connections": [
+    {
+      "from": "LDR",
+      "from_pin": "OUT",
+      "to": "Arduino",
+      "to_pin": "A0"
+    },
+    {
+      "from": "LDR",
+      "from_pin": "VCC",
+      "to": "Arduino",
+      "to_pin": "5V"
+    },
+    {
+      "from": "resistor_10k",
+      "from_pin": "1",
+      "to": "LDR",
+      "to_pin": "OUT"
+    },
+    {
+      "from": "resistor_10k",
+      "from_pin": "2",
+      "to": "Arduino",
+      "to_pin": "GND"
+    }
+  ],
+  "steps": [
+    {
+      "step_id": "s1",
+      "title": "Place LDR and resistor on breadboard",
+      "instruction": "Insert the LDR and a 10k resistor into the breadboard forming a voltage divider.",
+      "checks": [
+        "r_components_present"
+      ]
+    },
+    {
+      "step_id": "s2",
+      "title": "Connect LDR output to analog pin",
+      "instruction": "Connect the LDR/resistor junction to Arduino analog input A0.",
+      "checks": [
+        "r_ldr_to_a0"
+      ]
+    },
+    {
+      "step_id": "s3",
+      "title": "Power the divider",
+      "instruction": "Connect LDR VCC leg to Arduino 5V and the resistor's free leg to GND.",
+      "checks": [
+        "r_power_connections"
+      ]
+    },
+    {
+      "step_id": "s4",
+      "title": "Read light level",
+      "instruction": "Read the analog value at A0 and confirm it falls in the expected ambient-light range.",
+      "checks": [
+        "r_measurement_range"
+      ]
+    }
+  ],
+  "expected_measurements": [
+    {
+      "sensor": "LDR",
+      "unit": "ADC",
+      "min_value": 200,
+      "max_value": 800,
+      "description": "Typical indoor ambient light ADC reading (0-1023 scale)."
+    }
+  ],
+  "validation_rules": [
+    {
+      "rule_id": "r_components_present",
+      "description": "LDR and 10k resistor must both be present on the breadboard.",
+      "rule_type": "connection",
+      "target": "components",
+      "severity": "deviation"
+    },
+    {
+      "rule_id": "r_ldr_to_a0",
+      "description": "LDR OUT must connect to Arduino A0.",
+      "rule_type": "connection",
+      "target": "LDR->Arduino",
+      "severity": "deviation"
+    },
+    {
+      "rule_id": "r_power_connections",
+      "description": "LDR VCC and divider resistor GND leg must be correctly powered.",
+      "rule_type": "connection",
+      "target": "power",
+      "severity": "warning"
+    },
+    {
+      "rule_id": "r_measurement_range",
+      "description": "ADC reading must fall within the expected ambient light range.",
+      "rule_type": "measurement",
+      "target": "LDR",
+      "severity": "deviation"
+    }
+  ],
+  "troubleshooting": {
+    "reading_always_0": "Check that LDR VCC is connected to 5V, not left floating.",
+    "reading_always_1023": "Check that the resistor's ground leg is actually connected to GND.",
+    "no_change_with_light": "Confirm the LDR itself (not a fixed resistor) is in the light-facing leg of the divider."
+  }
+}
