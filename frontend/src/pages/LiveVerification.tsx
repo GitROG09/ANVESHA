@@ -46,6 +46,12 @@ export default function LiveVerification() {
   }, [videoStream]);
 
   useEffect(() => {
+    if (mode === "camera" || !videoStream) return;
+    videoStream.getTracks().forEach((track) => track.stop());
+    setVideoStream(null);
+  }, [mode, videoStream]);
+
+  useEffect(() => {
     if (mode !== "camera" || !videoStream || !videoRef.current) return;
     const video = videoRef.current;
     video.srcObject = videoStream;

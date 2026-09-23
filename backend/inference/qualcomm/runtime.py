@@ -29,9 +29,21 @@ class RuntimeStatus:
 
 
 class RuntimeDetector:
-    def status(self, vision_backend_name: str, speech_backend_name: str) -> RuntimeStatus:
+    def status(
+        self,
+        vision_backend_name: str,
+        speech_backend_name: str,
+        *,
+        qualcomm_inference_ready: bool = False,
+    ) -> RuntimeStatus:
         device = device_detector.detect()
-        active = "qualcomm-npu" if (device.is_windows_arm64 and device.qai_hub_installed) else "cpu-fallback"
+        active = "qualcomm-npu" if (
+            vision_backend_name == "qualcomm-npu-qwen3vl"
+            and qualcomm_inference_ready
+            and device.is_windows_arm64
+            and device.qai_hub_installed
+            and device.qnn_runtime_found
+        ) else "cpu-fallback"
         return RuntimeStatus(
             active_backend=active,
             vision_backend=vision_backend_name,

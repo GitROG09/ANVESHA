@@ -45,6 +45,21 @@ def entity_metrics(expected: Iterable[str], predicted: Iterable[str]) -> dict[st
     return exact_connection_metrics(expected, predicted)
 
 
+def connection_record_metrics(record: dict[str, Any]) -> dict[str, Any]:
+    expected = set(record.get("expected_connections", []))
+    predicted = set(record.get("predicted_connections", []))
+    statuses = set(record.get("connection_statuses", []))
+    return {
+        "sample_count": 1,
+        "expected_connections": sorted(expected),
+        "predicted_connections": sorted(predicted),
+        "expected_connection_detected": bool(expected & predicted),
+        "wrong_pin_detected": bool(predicted - expected),
+        "connection_missing": bool(expected - predicted),
+        "uncertain_or_occluded": bool(statuses & {"UNCERTAIN", "OCCLUDED"}),
+    }
+
+
 def box_iou(left: dict[str, float], right: dict[str, float]) -> float:
     """Calculate IoU for normalized x/y/w/h boxes."""
     left_x2, left_y2 = left["x"] + left["w"], left["y"] + left["h"]
@@ -73,6 +88,7 @@ def evaluate_records(records: list[dict[str, Any]]) -> dict[str, Any]:
             (connection for record in subset for connection in record.get("expected_connections", [])),
             (connection for record in subset for connection in record.get("predicted_connections", [])),
         )
+        connection_by_record = [connection_record_metrics(record) for record in subset]
         entity_results = {}
         for name in ("components", "pins", "endpoints", "evidence_statuses"):
             expected_key = f"expected_{name}"
@@ -91,6 +107,8 @@ def evaluate_records(records: list[dict[str, Any]]) -> dict[str, Any]:
         return {
             "sample_count": len(subset),
             "connection_metrics": connection,
+            "connection_metrics_aggregate": connection,
+            "connection_metrics_by_record": connection_by_record,
             "entity_metrics": entity_results,
             "state_metrics": state_metrics,
             "false_pass_count": false_pass,

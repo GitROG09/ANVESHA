@@ -79,8 +79,20 @@ def test_verify_endpoint_direct():
             ],
             "backend_used": "test",
         },
-        "sensor_readings": [{"sensor": "LDR", "value": 500, "unit": "ADC", "source": "simulated", "simulated": True}],
+        "sensor_readings": [{"sensor": "LDR", "value": 500, "unit": "ADC", "source": "arduino", "simulated": False}],
     }
     r = client.post("/api/verify", json=payload)
     assert r.status_code == 200
     assert r.json()["experiment_state"] == "PASS"
+
+
+def test_verify_endpoint_rejects_simulated_telemetry_outside_demo_path():
+    r = client.post(
+        "/api/verify",
+        json={
+            "experiment_id": "ldr_001",
+            "sensor_readings": [{"sensor": "LDR", "value": 500, "unit": "ADC", "source": "simulated", "simulated": True}],
+        },
+    )
+    assert r.status_code == 400
+    assert "explicit /api/demo/*" in r.json()["detail"]

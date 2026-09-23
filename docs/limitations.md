@@ -53,10 +53,9 @@ benchmarks" requirement.
   (`<sensor>,<value>,<unit>\n` at 115200 baud) and uses `pyserial`, but no
   physical Arduino was connected while building this project, so the
   hardware path (`read_hardware`) is implemented and unit-testable for its
-  failure modes but not verified against a real board. An example Arduino
-  sketch implementing this protocol should be added under
-  `scripts/arduino/telemetry_sketch.ino`, but no hardware-in-the-loop run has
-  been performed.
+  failure modes but not verified against a real board. The example Arduino
+  sketch exists at `scripts/arduino/telemetry_sketch.ino`, but no
+  hardware-in-the-loop run has been performed.
 
 ## Benchmarking
 
@@ -94,7 +93,7 @@ benchmarks" requirement.
 ## What IS real and tested in this snapshot
 
 - The experiment schema, loader, and all three experiment definitions.
-- The verification engine's rule-based evidence fusion (68 automated tests,
+- The verification engine's rule-based evidence fusion (83 automated tests,
   all passing, covering pass/deviation/insufficient-evidence/before-after
   cases).
 - The FastAPI backend, booted and manually smoke-tested live (not just via

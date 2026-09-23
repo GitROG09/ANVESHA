@@ -105,7 +105,7 @@ anvesha-ai/
 ├── scripts/
 │   ├── run_tests.sh             single test command
 │   └── arduino/telemetry_sketch.ino
-├── tests/                       pytest suite (68 tests)
+├── tests/                       pytest suite (83 tests)
 ├── assets/
 ├── submission/                  competition submission materials
 ├── README.md
@@ -179,7 +179,7 @@ The Settings screen will then show `Qualcomm NPU` as the active backend.
 bash scripts/run_tests.sh
 ```
 
-Runs the full pytest suite (68 tests: experiment engine, verification,
+Runs the full pytest suite (83 tests: experiment engine, verification,
 evidence fusion, perception adapter, evaluation, telemetry, inference
 backends, API) and the frontend production
 build/type-check in one command.

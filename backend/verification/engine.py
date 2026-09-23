@@ -270,16 +270,17 @@ def _rollup_components(evidence: list[StructuredEvidence]) -> tuple[list[StepRes
     warnings: list[StepResult] = []
     evidence_log: list[EvidenceItem] = []
     for item in [e for e in evidence if e.relationship == "component" and e.status != EvidenceStatus.OBSERVED and e.severity]:
+        is_definite_missing = item.status == EvidenceStatus.MISSING
         step = StepResult(
             step_id=f"component_{item.subject}",
             title=item.subject,
-            status="failed" if item.severity == "deviation" else "warning",
+            status="failed" if is_definite_missing and item.severity == "deviation" else "warning",
             expected=item.expected,
             observed=("Occluded" if item.status == EvidenceStatus.OCCLUDED else item.status.value.title()),
             why_it_matters="The required component could not be confirmed in the frame.",
             recommended_action="Reposition the camera and ensure the component is visible.",
         )
-        if item.severity == "deviation":
+        if is_definite_missing and item.severity == "deviation":
             failed.append(step)
         else:
             warnings.append(step)

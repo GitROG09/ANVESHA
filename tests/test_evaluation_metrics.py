@@ -49,3 +49,20 @@ def test_entity_metric_slots_cover_components_pins_endpoints_and_statuses():
 
 def test_box_iou_uses_normalized_coordinates():
     assert box_iou({"x": 0, "y": 0, "w": 0.5, "h": 0.5}, {"x": 0, "y": 0, "w": 0.5, "h": 0.5}) == 1.0
+
+
+def test_fixture_evaluation_exposes_per_record_connection_diagnostics():
+    result = evaluate_records([{
+        "provenance": "test_fixture",
+        "expected_connections": ["LDR OUT->Arduino A0"],
+        "predicted_connections": ["LDR OUT->Arduino A1"],
+        "connection_statuses": ["OBSERVED"],
+        "expected_state": "DEVIATION",
+        "predicted_state": "DEVIATION",
+    }])
+    per_record = result["test_fixture"]["connection_metrics_by_record"][0]
+    assert per_record["sample_count"] == 1
+    assert per_record["expected_connection_detected"] is False
+    assert per_record["wrong_pin_detected"] is True
+    assert per_record["connection_missing"] is True
+    assert result["test_fixture"]["connection_metrics_aggregate"]["sample_count"] == 1

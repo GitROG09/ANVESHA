@@ -89,6 +89,12 @@ def verify_experiment(payload: VerificationRequest) -> VerificationResult:
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+    if any(reading.simulated for reading in payload.sensor_readings):
+        raise HTTPException(
+            status_code=400,
+            detail="Simulated telemetry is only accepted through the explicit /api/demo/* path.",
+        )
+
     return verify(experiment, payload.visual_observation, payload.sensor_readings)
 
 

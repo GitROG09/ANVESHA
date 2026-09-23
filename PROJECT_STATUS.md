@@ -195,7 +195,7 @@ tests) is finished end to end.
   in behavior — all still pass).
 - Objective 2 adds adapter, evaluation, fixture-provider, and end-to-end
   pipeline tests.
-- **68 passed, 0 failed** in the current backend suite.
+- **83 passed, 0 failed** in the current backend suite.
 - Frontend build/type-check remains environment-dependent; Node/npm were not
   available in the implementation shell.
 

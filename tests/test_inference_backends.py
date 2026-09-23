@@ -13,7 +13,9 @@ from backend.experiments.engine import ExperimentEngine, DEFAULT_EXPERIMENTS_DIR
 from backend.inference.fallback.vision_backend import FallbackVisionBackend
 from backend.inference.fallback.speech_backend import FallbackSpeechBackend, SpeechBackendUnavailable
 from backend.inference.qualcomm.vision_backend import QualcommVisionBackend, QualcommBackendUnavailable
-from backend.inference.qualcomm.device_detection import device_detector
+from backend.inference.qualcomm.device_detection import DeviceInfo, device_detector
+from backend.inference.qualcomm.runtime import RuntimeDetector
+from backend.services.inference_manager import inference_manager
 
 engine = ExperimentEngine(DEFAULT_EXPERIMENTS_DIR)
 
@@ -71,3 +73,44 @@ def test_qualcomm_backend_reports_unavailable_off_snapdragon():
     exp = engine.get("ldr_001")
     with pytest.raises(QualcommBackendUnavailable):
         backend.analyze(b"irrelevant", exp)
+
+
+def test_qualcomm_packages_without_executable_inference_never_activate(monkeypatch):
+    info = DeviceInfo(
+        os_name="Windows",
+        machine="arm64",
+        is_windows_arm64=True,
+        qnn_runtime_found=True,
+        qai_hub_installed=True,
+        backend_recommendation="test device",
+    )
+    monkeypatch.setattr(device_detector, "detect", lambda: info)
+    backend = QualcommVisionBackend()
+    assert backend.is_executable() is False
+    assert RuntimeDetector().status(
+        backend.name,
+        "fallback-cpu-whisper",
+        qualcomm_inference_ready=False,
+    ).active_backend == "cpu-fallback"
+
+
+def test_qnn_unavailable_never_reports_qualcomm_active(monkeypatch):
+    info = DeviceInfo(
+        os_name="Windows",
+        machine="arm64",
+        is_windows_arm64=True,
+        qnn_runtime_found=False,
+        qai_hub_installed=True,
+        backend_recommendation="test device",
+    )
+    monkeypatch.setattr(device_detector, "detect", lambda: info)
+    assert RuntimeDetector().status(
+        "qualcomm-npu-qwen3vl",
+        "fallback-cpu-whisper",
+        qualcomm_inference_ready=True,
+    ).active_backend == "cpu-fallback"
+
+
+def test_current_x64_manager_uses_fallback_and_runtime_does_not_claim_npu():
+    assert inference_manager.get_vision_backend().name == "fallback-cpu-opencv"
+    assert inference_manager.runtime_status()["active_backend"] == "cpu-fallback"

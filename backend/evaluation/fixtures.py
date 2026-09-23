@@ -49,6 +49,7 @@ def fixture_to_evaluation_record(fixture: dict[str, Any]) -> dict[str, Any]:
         "provenance": fixture["provenance"],
         "expected_connections": fixture.get("expected_connections", []),
         "predicted_connections": fixture.get("predicted_connections", []),
+        "connection_statuses": [connection["status"] for connection in fixture.get("connections", [])],
         "expected_components": fixture.get("expected_components", []),
         "predicted_components": fixture.get("predicted_components", []),
         "expected_pins": fixture.get("expected_pins", []),

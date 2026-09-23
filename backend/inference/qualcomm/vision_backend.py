@@ -46,6 +46,10 @@ class QualcommVisionBackend(VisionBackend):
             return False
         return True
 
+    def is_executable(self) -> bool:
+        """Return whether this repository contains an executable QNN call."""
+        return False
+
     def analyze(self, image_bytes: bytes, experiment: Experiment) -> VisualObservation:
         if not self.is_available():
             device = device_detector.detect()

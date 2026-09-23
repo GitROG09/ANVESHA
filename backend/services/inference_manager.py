@@ -26,7 +26,7 @@ class InferenceManager:
         self._fallback_speech = FallbackSpeechBackend()
 
     def get_vision_backend(self) -> VisionBackend:
-        if self._qualcomm_vision.is_available():
+        if self._qualcomm_vision.is_available() and self._qualcomm_vision.is_executable():
             return self._qualcomm_vision
         return self._fallback_vision
 
@@ -38,7 +38,11 @@ class InferenceManager:
     def runtime_status(self) -> dict:
         vision = self.get_vision_backend()
         speech = self.get_speech_backend()
-        return runtime_detector.status(vision.name, speech.name).to_dict()
+        return runtime_detector.status(
+            vision.name,
+            speech.name,
+            qualcomm_inference_ready=vision is self._qualcomm_vision and self._qualcomm_vision.is_executable(),
+        ).to_dict()
 
 
 inference_manager = InferenceManager()

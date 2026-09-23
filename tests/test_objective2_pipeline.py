@@ -83,6 +83,29 @@ def test_explicit_missing_component_is_rule_backed():
     assert any(step.step_id == "component_LDR" for step in result.failed_steps)
 
 
+def test_uncertain_component_is_warning_not_definite_deviation():
+    components = [{"label": "LDR", "confidence": 0.4, "status": "UNCERTAIN"}] + [
+        {"label": name, "confidence": 0.9, "status": "OBSERVED"}
+        for name in ["Arduino", "resistor_10k", "breadboard", "jumper_wires"]
+    ]
+    observation = FixtureVisionBackend(_payload(components=components)).analyze(b"fixture", experiment)
+    result = verify(experiment, observation, _reading())
+    assert result.experiment_state == "WARNING"
+    assert any(step.step_id == "component_LDR" for step in result.warnings)
+    assert not any(step.step_id == "component_LDR" for step in result.failed_steps)
+
+
+def test_occluded_component_is_warning_not_definite_deviation():
+    components = [{"label": "LDR", "confidence": 0.6, "status": "OCCLUDED"}] + [
+        {"label": name, "confidence": 0.9, "status": "OBSERVED"}
+        for name in ["Arduino", "resistor_10k", "breadboard", "jumper_wires"]
+    ]
+    observation = FixtureVisionBackend(_payload(components=components)).analyze(b"fixture", experiment)
+    result = verify(experiment, observation, _reading())
+    assert result.experiment_state == "WARNING"
+    assert any(step.step_id == "component_LDR" for step in result.warnings)
+
+
 def test_warning_connection_rule_does_not_become_deviation():
     connections = _full_connections()
     connections[1]["to_pin"] = "GND"
