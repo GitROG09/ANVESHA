@@ -67,6 +67,22 @@ class Experiment(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Evidence status — the core "how sure are we, and why" vocabulary shared
+# by every layer downstream of raw perception. This is deliberately kept
+# separate from any single confidence float: STATUS answers "what kind of
+# evidence is this", CONFIDENCE (where applicable) answers "how strong is
+# it". A MISSING or OCCLUDED item has no meaningful confidence at all.
+# ---------------------------------------------------------------------------
+
+class EvidenceStatus(str, Enum):
+    OBSERVED = "OBSERVED"      # directly perceived with usable confidence
+    INFERRED = "INFERRED"      # not directly seen, but reasonably implied by other evidence
+    UNCERTAIN = "UNCERTAIN"    # perceived, but confidence too low to trust either way
+    OCCLUDED = "OCCLUDED"      # known to be blocked from view / partially hidden
+    MISSING = "MISSING"        # no evidence at all — not detected, not attempted, not present
+
+
+# ---------------------------------------------------------------------------
 # Visual observation (produced by the vision backend)
 # ---------------------------------------------------------------------------
 
@@ -75,7 +91,12 @@ class DetectedConnection(BaseModel):
     from_pin: str
     to_component: str
     to_pin: str
+    # Perception-level confidence for THIS connection only. This is never
+    # the same number as frame/image quality, and never the same number as
+    # the verification engine's overall certainty — see VisualObservation
+    # .frame_quality and VerificationResult.confidence respectively.
     confidence: float
+    status: EvidenceStatus = EvidenceStatus.OBSERVED
 
 
 class BoundingBox(BaseModel):
@@ -85,7 +106,7 @@ class BoundingBox(BaseModel):
     w: float
     h: float
     confidence: float
-    status: str = "uncertain"  # "verified" | "uncertain" | "deviation"
+    status: str = "uncertain"  # "verified" | "uncertain" | "deviation" | "occluded"
 
 
 class VisualObservation(BaseModel):
@@ -96,6 +117,13 @@ class VisualObservation(BaseModel):
     notes: str = ""
     backend_used: str = "unknown"
     simulated: bool = False
+    # Image-quality confidence: "is this frame suitable for perception at
+    # all?" (blur/brightness/exposure heuristics). Deliberately a distinct
+    # field from any per-connection confidence — a sharp, well-lit frame
+    # (frame_quality near 1.0) can still yield zero reliable connection
+    # detections, and a backend must never let a good frame_quality score
+    # leak into individual connection/component confidence values.
+    frame_quality: Optional[float] = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -110,6 +138,50 @@ class SensorReading(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source: str = "arduino"  # "arduino" | "simulated"
     simulated: bool = False
+
+
+# ---------------------------------------------------------------------------
+# Evidence fusion output
+#
+# This is the structured, per-claim record the evidence-fusion module
+# (backend/evidence/fusion.py) produces by combining vision + telemetry +
+# the experiment specification. The verification engine consumes THIS,
+# not raw VisualObservation/SensorReading data, so the "does this satisfy
+# the experiment" logic never has to re-derive what was actually observed.
+# ---------------------------------------------------------------------------
+
+class StructuredEvidence(BaseModel):
+    # What this piece of evidence is about, e.g. "LDR OUT -> Arduino A0"
+    # or "LDR measurement".
+    subject: str
+    # "connection" | "measurement" | "component"
+    relationship: str
+    # What the experiment specification requires here.
+    expected: str
+    # What was actually observed/measured, if anything. None when status
+    # is MISSING (there is nothing to report).
+    observed: Optional[str] = None
+    status: EvidenceStatus
+    # Perception/measurement confidence for THIS item alone. None when not
+    # applicable (MISSING has no confidence to report). Never conflated
+    # with image quality or with the eventual verification certainty.
+    confidence: Optional[float] = None
+    source: str  # "vision" | "telemetry" | "procedure"
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class EvidenceBundle(BaseModel):
+    """All structured evidence fused for one verification pass."""
+
+    experiment_id: str
+    # Whether the underlying frame was even suitable for perception. When
+    # False, no per-connection evidence below should be trusted regardless
+    # of individual status/confidence values.
+    frame_suitable: bool
+    frame_quality: Optional[float] = None
+    structured_evidence: list[StructuredEvidence] = Field(default_factory=list)
+    simulated: bool = False
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ---------------------------------------------------------------------------

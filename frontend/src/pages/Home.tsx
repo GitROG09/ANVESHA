@@ -1,6 +1,21 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { api } from "../api/client";
+import type { RuntimeStatus } from "../types";
+
+function runtimeLabel(runtime: RuntimeStatus | null): string {
+  if (!runtime) return "Checking…";
+  if (runtime.active_backend === "qualcomm-npu") return "Qualcomm NPU (Snapdragon accelerated)";
+  return "CPU fallback (local development)";
+}
 
 export default function Home() {
+  const [runtime, setRuntime] = useState<RuntimeStatus | null>(null);
+
+  useEffect(() => {
+    api.runtime().then(setRuntime).catch(() => {});
+  }, []);
+
   return (
     <div className="container" style={{ paddingTop: 72, paddingBottom: 72 }}>
       <div style={{ maxWidth: 660 }}>
@@ -22,7 +37,7 @@ export default function Home() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, maxWidth: 900 }}>
-        <StatusCard label="AI Runtime" value="Qualcomm Accelerated / Local Development" />
+        <StatusCard label="AI Runtime" value={runtimeLabel(runtime)} />
         <StatusCard label="Processing" value="On-device" />
         <StatusCard label="Network" value="Not required for AI inference" />
       </div>

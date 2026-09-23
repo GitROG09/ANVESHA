@@ -54,18 +54,35 @@ class FallbackVisionBackend(VisionBackend):
             raise ValueError("Could not decode image bytes as a valid image.")
         return img
 
-    def _assess_quality(self, img: "np.ndarray") -> tuple[bool, str]:
+    def _assess_quality(self, img: "np.ndarray") -> tuple[bool, str, float]:
+        """Returns (suitable_for_perception, note, frame_quality_score).
+
+        frame_quality is a 0-1 heuristic score answering ONLY "is this
+        frame usable at all" (sharpness + exposure). It is never reused as
+        a stand-in for object/connection detection confidence — those are
+        separate numbers with a separate meaning, computed (or explicitly
+        withheld) per-connection, never derived from this score.
+        """
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         blur_score = cv2.Laplacian(gray, cv2.CV_64F).var()
         brightness = float(gray.mean())
 
+        # Normalize sharpness and brightness into independent 0-1 sub-scores,
+        # then combine. This score never becomes a perception/connection
+        # confidence value — see the module docstring.
+        sharpness_component = min(blur_score / (BLUR_THRESHOLD * 4), 1.0)
+        mid_brightness = (MIN_BRIGHTNESS + MAX_BRIGHTNESS) / 2
+        half_range = (MAX_BRIGHTNESS - MIN_BRIGHTNESS) / 2
+        brightness_component = max(0.0, 1.0 - abs(brightness - mid_brightness) / half_range)
+        quality = round(min(max(0.5 * sharpness_component + 0.5 * brightness_component, 0.0), 1.0), 2)
+
         if blur_score < BLUR_THRESHOLD:
-            return False, f"Frame appears too blurry (sharpness score {blur_score:.1f}). Hold the camera steady."
+            return False, f"Frame appears too blurry (sharpness score {blur_score:.1f}). Hold the camera steady.", quality
         if brightness < MIN_BRIGHTNESS:
-            return False, f"Frame is too dark (mean brightness {brightness:.1f}/255). Improve lighting."
+            return False, f"Frame is too dark (mean brightness {brightness:.1f}/255). Improve lighting.", quality
         if brightness > MAX_BRIGHTNESS:
-            return False, f"Frame is overexposed (mean brightness {brightness:.1f}/255). Reduce direct glare."
-        return True, f"Frame quality OK (sharpness {blur_score:.1f}, brightness {brightness:.1f})."
+            return False, f"Frame is overexposed (mean brightness {brightness:.1f}/255). Reduce direct glare.", quality
+        return True, f"Frame quality OK (sharpness {blur_score:.1f}, brightness {brightness:.1f}).", quality
 
     def _estimate_component_regions(self, img: "np.ndarray") -> int:
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -81,7 +98,7 @@ class FallbackVisionBackend(VisionBackend):
             raise RuntimeError("FallbackVisionBackend requires opencv-python-headless to be installed.")
 
         img = self._decode(image_bytes)
-        ok, quality_note = self._assess_quality(img)
+        ok, quality_note, frame_quality = self._assess_quality(img)
 
         if not ok:
             return VisualObservation(
@@ -89,6 +106,7 @@ class FallbackVisionBackend(VisionBackend):
                 notes=quality_note,
                 backend_used=self.name,
                 simulated=False,
+                frame_quality=frame_quality,
             )
 
         region_count = self._estimate_component_regions(img)
@@ -107,4 +125,9 @@ class FallbackVisionBackend(VisionBackend):
             notes=limitation_note,
             backend_used=self.name,
             simulated=False,
+            # A good frame_quality score here says only "this image is
+            # sharp and well-exposed" — it must NOT be read as confidence
+            # that any particular component/connection was detected, since
+            # detected_connections is (honestly) empty.
+            frame_quality=frame_quality,
         )

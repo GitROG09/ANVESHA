@@ -91,19 +91,19 @@ export default function LiveVerification() {
     setError(null);
     try {
       if (mode === "demo") {
+        // The only path allowed to use scripted/simulated evidence — it is
+        // explicitly labeled as such in the UI (see the SIMULATED notice
+        // below) and never runs silently.
         const r = await api.runDemoScenario(selectedDemo);
         setResult(r);
         setHistory((h) => [...h, r]);
       } else {
-        const em = exp.expected_measurements[0];
-        const center = em ? (em.min_value + em.max_value) / 2 : 500;
-        const reading = await api.simulateTelemetry(
-          em?.sensor ?? "sensor",
-          center,
-          10,
-          em?.unit ?? "ADC"
-        );
-        const r = await api.verify(exp.experiment_id, observation, [reading]);
+        // Real camera/upload verification: only the actual analyzed frame
+        // is sent. No telemetry is fabricated here — with no real sensor
+        // connected, sensor_readings is empty and the verification engine
+        // will honestly report missing measurement evidence rather than a
+        // manufactured PASS.
+        const r = await api.verify(exp.experiment_id, observation, []);
         setResult(r);
         setHistory((h) => [...h, r]);
       }
