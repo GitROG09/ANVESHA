@@ -105,7 +105,7 @@ anvesha-ai/
 ├── scripts/
 │   ├── run_tests.sh             single test command
 │   └── arduino/telemetry_sketch.ino
-├── tests/                       pytest suite (28 tests)
+├── tests/                       pytest suite (68 tests)
 ├── assets/
 ├── submission/                  competition submission materials
 ├── README.md
@@ -179,8 +179,9 @@ The Settings screen will then show `Qualcomm NPU` as the active backend.
 bash scripts/run_tests.sh
 ```
 
-Runs the full pytest suite (28 tests: experiment engine, verification
-engine, telemetry, inference backends, API) and the frontend production
+Runs the full pytest suite (68 tests: experiment engine, verification,
+evidence fusion, perception adapter, evaluation, telemetry, inference
+backends, API) and the frontend production
 build/type-check in one command.
 
 ## Benchmarking
@@ -192,6 +193,11 @@ python benchmarks/benchmark.py --runs 30
 Produces `benchmarks/results/benchmark_report.{json,md}` with real local
 CPU latency/memory numbers, and a clearly separate, unmeasured "Qualcomm AI
 Hub reference metrics" section. See `docs/benchmarking.md`.
+
+Objective 2 perception contracts, labeled test fixtures, and the
+provenance-aware evaluation harness are documented in
+`docs/vision_evaluation.md` and `datasets/ldr/`. No real LDR photographs or
+real-world perception metrics are included.
 
 ## Safety
 

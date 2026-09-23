@@ -1,0 +1,9 @@
+{
+  "image_id": null,
+  "experiment_id": "ldr_001",
+  "provenance": "test_fixture",
+  "case": "occluded",
+  "expected_state": "WARNING",
+  "description": "Structured fixture only; no photograph is included.",
+  "components": [{"label": "LDR", "confidence": 0.60, "status": "OCCLUDED"}]
+}

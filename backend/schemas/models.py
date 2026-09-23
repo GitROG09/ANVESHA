@@ -89,13 +89,42 @@ class EvidenceStatus(str, Enum):
 class DetectedConnection(BaseModel):
     from_component: str
     from_pin: str
-    to_component: str
-    to_pin: str
+    to_component: Optional[str] = None
+    to_pin: Optional[str] = None
     # Perception-level confidence for THIS connection only. This is never
     # the same number as frame/image quality, and never the same number as
     # the verification engine's overall certainty — see VisualObservation
     # .frame_quality and VerificationResult.confidence respectively.
-    confidence: float
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    status: EvidenceStatus = EvidenceStatus.OBSERVED
+
+
+class Point2D(BaseModel):
+    x: float = Field(..., ge=0.0, le=1.0)
+    y: float = Field(..., ge=0.0, le=1.0)
+
+
+class DetectedComponent(BaseModel):
+    label: str
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    bounding_box: Optional["BoundingBox"] = None
+    status: EvidenceStatus = EvidenceStatus.OBSERVED
+
+
+class DetectedPin(BaseModel):
+    component_label: str
+    pin_label: str
+    position: Point2D
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    status: EvidenceStatus = EvidenceStatus.OBSERVED
+
+
+class WireEndpoint(BaseModel):
+    wire_id: str
+    position: Point2D
+    component_label: Optional[str] = None
+    pin_label: Optional[str] = None
+    confidence: float = Field(..., ge=0.0, le=1.0)
     status: EvidenceStatus = EvidenceStatus.OBSERVED
 
 
@@ -105,13 +134,16 @@ class BoundingBox(BaseModel):
     y: float
     w: float
     h: float
-    confidence: float
+    confidence: float = Field(..., ge=0.0, le=1.0)
     status: str = "uncertain"  # "verified" | "uncertain" | "deviation" | "occluded"
 
 
 class VisualObservation(BaseModel):
     sufficient_evidence: bool
     detected_components: list[str] = Field(default_factory=list)
+    component_observations: list[DetectedComponent] = Field(default_factory=list)
+    detected_pins: list[DetectedPin] = Field(default_factory=list)
+    wire_endpoints: list[WireEndpoint] = Field(default_factory=list)
     detected_connections: list[DetectedConnection] = Field(default_factory=list)
     bounding_boxes: list[BoundingBox] = Field(default_factory=list)
     notes: str = ""
@@ -154,6 +186,7 @@ class StructuredEvidence(BaseModel):
     # What this piece of evidence is about, e.g. "LDR OUT -> Arduino A0"
     # or "LDR measurement".
     subject: str
+    rule_id: Optional[str] = None
     # "connection" | "measurement" | "component"
     relationship: str
     # What the experiment specification requires here.
@@ -167,6 +200,7 @@ class StructuredEvidence(BaseModel):
     # with image quality or with the eventual verification certainty.
     confidence: Optional[float] = None
     source: str  # "vision" | "telemetry" | "procedure"
+    severity: Optional[str] = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 

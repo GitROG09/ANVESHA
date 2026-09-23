@@ -2,8 +2,35 @@
 
 ## Current phase
 
-Phase 2 — Objective 1 (structured evidence + evidence fusion foundation)
-— **complete**, as of commit built in this session.
+Phase 2 — Objective 2 (real LDR vision perception & evaluation foundation)
+— **foundation implemented; real perception pending data/model/hardware**.
+
+## Objective 2 update
+
+Implemented in the current repository:
+
+- Structured component, pin, wire-endpoint, and conservative connection fields
+  in `backend/schemas/models.py`.
+- Strict provider-output adapter in `backend/inference/perception_adapter.py`.
+  It validates JSON, labels, confidence, normalized coordinates, duplicate
+  claims, endpoint references, and rejects provider-generated verdicts.
+- Explicit `FixtureVisionBackend` for labeled structured tests only. It is not
+  selected as a real inference backend.
+- Rule metadata through evidence fusion and explicit structured component
+  claims participating in deterministic verification.
+- Provenance-aware dataset contracts and eight structured golden fixtures in
+  `datasets/ldr/`. No images are included.
+- Deterministic evaluation helpers and `scripts/evaluate_vision.py`.
+- Camera stream lifecycle and zero-sized-frame safeguards.
+- Frontend source/evidence labeling, evidence-log rendering, and experiment-
+  scoped demo scenarios.
+
+Not implemented or available:
+
+- Real LDR photographs, physical ground truth, or real-world metrics.
+- Trained LDR component/pin/wire perception.
+- Executable Qwen3-VL or Qualcomm QNN inference.
+- Real camera browser testing in this environment.
 
 ## Note on repository history
 
@@ -119,21 +146,14 @@ the task brief (structured evidence schema, fusion module, verification
 engine as thin rollup, fallback vision backend emitting the new fields,
 tests) is finished end to end.
 
-## Remaining (explicitly out of scope for this session)
+## Objective 2 remaining work
 
-- Vision evaluation dataset (`docs/vision-evaluation.md` and the
-  underlying labeled dataset) — not started, per instruction not to
-  start it yet.
-- Arduino hardware integration beyond the existing serial read path.
-- Qualcomm/Snapdragon NPU execution — abstraction and device detection
-  exist; no NPU execution is possible in this dev environment.
-- Frontend redesign beyond the two targeted bug fixes above.
-- `docs/qualcomm-integration.md` and `docs/benchmark-methodology.md` —
-  the repo already has closely related docs (`docs/qualcomm_deployment.md`,
-  `docs/benchmarking.md`); new dedicated files were not created since
-  they weren't required to finish Objective 1 and doing so wasn't asked
-  for beyond the doc list. Flagging for a decision next session: reuse/
-  rename the existing docs, or add the new ones alongside them.
+- Collect and annotate real LDR photographs when physical hardware becomes
+  available.
+- Train or integrate a real component/pin/wire perception provider.
+- Evaluate held-out real photographs without reporting synthetic fixtures as
+  real-world results.
+- Complete and validate Qualcomm/QNN execution on Snapdragon hardware.
 
 ## Known limitations (unchanged from prior audit, still accurate)
 
@@ -173,15 +193,14 @@ tests) is finished end to end.
 
 - 28 tests passing before this session's changes (baseline, unchanged
   in behavior — all still pass).
-- 16 new tests added in `tests/test_evidence_fusion.py`.
-- **44 passed, 0 failed**, full suite (`pytest -q` from repo root).
-- Frontend: `tsc --noEmit` and `vite build` both succeed with the
-  Home.tsx / LiveVerification.tsx changes.
+- Objective 2 adds adapter, evaluation, fixture-provider, and end-to-end
+  pipeline tests.
+- **68 passed, 0 failed** in the current backend suite.
+- Frontend build/type-check remains environment-dependent; Node/npm were not
+  available in the implementation shell.
 
 ## Next milestone
 
-Review this evidence architecture (schema, fusion module, thin
-verification rollup) before starting Phase 2, Objective 2. Objective 2
-candidates, per the task brief, are: the vision evaluation dataset,
-Arduino integration, Qualcomm integration, and the frontend redesign —
-none of which have been started.
+Acquire real LDR photographs and annotations, then implement and evaluate a
+real perception provider. Keep all results provenance-labeled and do not
+claim real-world accuracy until the held-out real-photo test split exists.

@@ -32,10 +32,30 @@ export default function LiveVerification() {
   }, []);
 
   useEffect(() => {
+    if (!exp) return;
+    const compatible = demoScenarios.filter((scenario) => scenario.experiment_id === exp.experiment_id);
+    if (compatible.length > 0 && !compatible.some((scenario) => scenario.id === selectedDemo)) {
+      setSelectedDemo(compatible[0].id);
+    }
+  }, [exp, demoScenarios, selectedDemo]);
+
+  useEffect(() => {
     return () => {
       videoStream?.getTracks().forEach((t) => t.stop());
     };
   }, [videoStream]);
+
+  useEffect(() => {
+    if (mode !== "camera" || !videoStream || !videoRef.current) return;
+    const video = videoRef.current;
+    video.srcObject = videoStream;
+    void video.play().catch(() => {
+      setError("The camera stream is ready, but the browser could not start playback. Press the browser play control and try again.");
+    });
+    return () => {
+      if (video.srcObject === videoStream) video.srcObject = null;
+    };
+  }, [mode, videoStream]);
 
   async function startCamera() {
     setError(null);
@@ -43,7 +63,6 @@ export default function LiveVerification() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       setVideoStream(stream);
       setMode("camera");
-      if (videoRef.current) videoRef.current.srcObject = stream;
     } catch (e: any) {
       setError(`Could not access camera: ${e.message}. This is common in a sandboxed/headless environment — try Upload Frame instead.`);
     }
@@ -53,6 +72,10 @@ export default function LiveVerification() {
     if (!exp || !videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
+    if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || video.videoWidth === 0 || video.videoHeight === 0) {
+      setError("The camera has not produced a usable frame yet. Keep the preview visible and try again.");
+      return;
+    }
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
@@ -117,6 +140,7 @@ export default function LiveVerification() {
   if (!exp) return <div className="container" style={{ paddingTop: 48, color: "var(--ink-3)" }}>Loading…</div>;
 
   const currentStepIndex = Math.min(history.length, exp.steps.length - 1);
+  const compatibleDemoScenarios = demoScenarios.filter((scenario) => scenario.experiment_id === exp.experiment_id);
 
   return (
     <div className="container" style={{ paddingTop: 40, paddingBottom: 72 }}>
@@ -167,13 +191,21 @@ export default function LiveVerification() {
                     border: "1px solid var(--line)", borderRadius: 6, fontFamily: "var(--font-mono)", fontSize: 13,
                   }}
                 >
-                  {demoScenarios.map((s) => (
+                  {compatibleDemoScenarios.map((s) => (
                     <option key={s.id} value={s.id}>{s.id}</option>
                   ))}
                 </select>
                 <p style={{ fontSize: 12.5, color: "var(--state-warn)", marginTop: 10 }}>
                   SIMULATED — this scenario uses scripted evidence, not a live camera, for reproducible presentation.
                 </p>
+              </div>
+            )}
+            {observation && (
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--line-soft)", fontSize: 12, color: "var(--ink-2)" }}>
+                <div style={{ fontFamily: "var(--font-mono)", color: observation.simulated ? "var(--state-warn)" : "var(--accent)" }}>
+                  SOURCE: {observation.simulated ? "SIMULATED" : observation.backend_used}
+                </div>
+                <div style={{ marginTop: 5 }}>{observation.notes}</div>
               </div>
             )}
           </div>

@@ -66,6 +66,16 @@ export function VerificationPanel({ result }: { result: VerificationResult }) {
         </Section>
       )}
 
+      {result.evidence.length > 0 && (
+        <Section title="Evidence">
+          {result.evidence.map((item, index) => (
+            <div key={`${item.source}-${index}`} style={{ padding: "7px 0", borderBottom: "1px solid var(--line-soft)", fontSize: 12.5, color: "var(--ink-2)" }}>
+              <span style={{ fontFamily: "var(--font-mono)", color: "var(--accent)" }}>{item.source}</span> {item.summary}
+            </div>
+          ))}
+        </Section>
+      )}
+
       {result.recommended_actions.length > 0 && (
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line-soft)" }}>
           <div style={{ fontSize: 11.5, fontFamily: "var(--font-mono)", color: "var(--ink-3)", marginBottom: 8 }}>

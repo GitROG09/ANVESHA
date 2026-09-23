@@ -208,12 +208,34 @@ def _rollup_measurements(evidence: list[StructuredEvidence]) -> tuple[list[StepR
 
 
 def _component_evidence_log(evidence: list[StructuredEvidence]) -> list[EvidenceItem]:
-    """Component presence is informational only — never blocks PASS on its own."""
+    """Keep component observations visible; rule severity controls missing claims."""
     log: list[EvidenceItem] = []
     for item in [e for e in evidence if e.relationship == "component"]:
         if item.status != EvidenceStatus.OBSERVED:
             log.append(EvidenceItem(source="vision", summary=f"Component '{item.subject}' was not identified in the frame."))
     return log
+
+
+def _rollup_components(evidence: list[StructuredEvidence]) -> tuple[list[StepResult], list[StepResult], list[EvidenceItem]]:
+    failed: list[StepResult] = []
+    warnings: list[StepResult] = []
+    evidence_log: list[EvidenceItem] = []
+    for item in [e for e in evidence if e.relationship == "component" and e.status != EvidenceStatus.OBSERVED and e.severity]:
+        step = StepResult(
+            step_id=f"component_{item.subject}",
+            title=item.subject,
+            status="failed" if item.severity == "deviation" else "warning",
+            expected=item.expected,
+            observed=("Occluded" if item.status == EvidenceStatus.OCCLUDED else item.status.value.title()),
+            why_it_matters="The required component could not be confirmed in the frame.",
+            recommended_action="Reposition the camera and ensure the component is visible.",
+        )
+        if item.severity == "deviation":
+            failed.append(step)
+        else:
+            warnings.append(step)
+        evidence_log.append(EvidenceItem(source="vision", summary=f"Component '{item.subject}' status: {item.status.value}."))
+    return failed, warnings, evidence_log
 
 
 def _compute_confidence(
@@ -277,11 +299,12 @@ def verify(
     conn_verified, conn_failed, conn_warnings, conn_evidence = _rollup_connections(bundle.structured_evidence)
     meas_verified, meas_failed, meas_warnings, meas_evidence = _rollup_measurements(bundle.structured_evidence)
     component_evidence = _component_evidence_log(bundle.structured_evidence)
+    component_failed, component_warnings, component_log = _rollup_components(bundle.structured_evidence)
 
     verified_steps = conn_verified + meas_verified
-    failed_steps = conn_failed + meas_failed
-    warning_steps = conn_warnings + meas_warnings
-    evidence = conn_evidence + meas_evidence + component_evidence
+    failed_steps = conn_failed + meas_failed + component_failed
+    warning_steps = conn_warnings + meas_warnings + component_warnings
+    evidence = conn_evidence + meas_evidence + component_evidence + component_log
 
     if failed_steps:
         state = ExperimentState.DEVIATION

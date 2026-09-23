@@ -1,0 +1,10 @@
+[
+  "../golden/correct_connection.json",
+  "../golden/wrong_a1.json",
+  "../golden/wrong_other_analog_pin.json",
+  "../golden/missing_connection.json",
+  "../golden/missing_component.json",
+  "../golden/occluded.json",
+  "../golden/poor_quality.json",
+  "../golden/uncertain_endpoint.json"
+]

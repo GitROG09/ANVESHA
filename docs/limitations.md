@@ -55,8 +55,8 @@ benchmarks" requirement.
   hardware path (`read_hardware`) is implemented and unit-testable for its
   failure modes but not verified against a real board. An example Arduino
   sketch implementing this protocol should be added under
-  `scripts/arduino/` before a hardware demo (not yet created in this
-  snapshot).
+  `scripts/arduino/telemetry_sketch.ino`, but no hardware-in-the-loop run has
+  been performed.
 
 ## Benchmarking
 
@@ -80,9 +80,9 @@ benchmarks" requirement.
 - PDF/image procedure upload (mentioned as optional in the project brief)
   is not implemented; only built-in JSON experiment definitions are
   supported in this snapshot.
-- No automated frontend (component/e2e) tests were written; only a
-  successful `tsc -b && vite build` was verified, plus manual review of the
-  API contract against `tests/test_api.py`.
+- No automated frontend (component/e2e) tests were written. The camera stream
+  lifecycle and zero-sized-frame guard are implemented, but browser hardware
+  behavior remains untested in this environment.
 
 ## Experiment coverage
 
@@ -94,7 +94,7 @@ benchmarks" requirement.
 ## What IS real and tested in this snapshot
 
 - The experiment schema, loader, and all three experiment definitions.
-- The verification engine's rule-based evidence fusion (28 automated tests,
+- The verification engine's rule-based evidence fusion (68 automated tests,
   all passing, covering pass/deviation/insufficient-evidence/before-after
   cases).
 - The FastAPI backend, booted and manually smoke-tested live (not just via
@@ -120,4 +120,5 @@ benchmarks" requirement.
 - Bounding-box overlay rendering in the frontend (schema/types are ready;
   no backend currently emits real coordinates to render).
 - Voice UI (microphone capture + playback of answers).
-- Arduino sketch file and an actual hardware-in-the-loop test run.
+- An actual Arduino hardware-in-the-loop test run.
+- Real LDR photographs, annotations, and real-world perception metrics.

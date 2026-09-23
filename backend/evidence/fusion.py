@@ -58,6 +58,25 @@ def _find_best_match(
     return max(candidates, key=lambda d: d.confidence)
 
 
+def _connection_rule(experiment: Experiment, from_component: str, to_component: str) -> tuple[str | None, str | None]:
+    target = f"{from_component}->{to_component}".lower()
+    for rule in experiment.validation_rules:
+        if rule.rule_type == "connection" and rule.target and rule.target.lower() == target:
+            return rule.rule_id, rule.severity
+    if to_component.lower() in {"arduino", "power"}:
+        for rule in experiment.validation_rules:
+            if rule.rule_type == "connection" and rule.target and rule.target.lower() == "power":
+                return rule.rule_id, rule.severity
+    return None, None
+
+
+def _component_rule(experiment: Experiment) -> tuple[str | None, str | None]:
+    for rule in experiment.validation_rules:
+        if rule.rule_type == "connection" and rule.target and rule.target.lower() == "components":
+            return rule.rule_id, rule.severity
+    return None, None
+
+
 def _is_occluded(component: str, observation: VisualObservation) -> bool:
     """True only if the backend explicitly flagged this component as occluded.
 
@@ -80,6 +99,7 @@ def _fuse_connection_evidence(
     for conn in experiment.connections:
         subject = f"{conn.from_component} {conn.from_pin} -> {conn.to_component} {conn.to_pin}"
         expected = f"{conn.to_component} {conn.to_pin}"
+        rule_id, severity = _connection_rule(experiment, conn.from_component, conn.to_component)
         match = _find_best_match(conn.from_component, conn.from_pin, observation.detected_connections)
 
         if match is None:
@@ -87,12 +107,30 @@ def _fuse_connection_evidence(
             items.append(
                 StructuredEvidence(
                     subject=subject,
+                    rule_id=rule_id,
                     relationship="connection",
                     expected=expected,
                     observed=None,
                     status=status,
                     confidence=None,
                     source="vision",
+                    severity=severity,
+                )
+            )
+            continue
+
+        if match.to_component is None or match.to_pin is None:
+            items.append(
+                StructuredEvidence(
+                    subject=subject,
+                    rule_id=rule_id,
+                    relationship="connection",
+                    expected=expected,
+                    observed=None,
+                    status=EvidenceStatus.UNCERTAIN,
+                    confidence=match.confidence,
+                    source="vision",
+                    severity=severity,
                 )
             )
             continue
@@ -103,12 +141,30 @@ def _fuse_connection_evidence(
             items.append(
                 StructuredEvidence(
                     subject=subject,
+                    rule_id=rule_id,
                     relationship="connection",
                     expected=expected,
                     observed=observed,
                     status=EvidenceStatus.INFERRED,
                     confidence=match.confidence,
                     source="vision",
+                    severity=severity,
+                )
+            )
+            continue
+
+        if match.status in {EvidenceStatus.UNCERTAIN, EvidenceStatus.OCCLUDED, EvidenceStatus.MISSING}:
+            items.append(
+                StructuredEvidence(
+                    subject=subject,
+                    rule_id=rule_id,
+                    relationship="connection",
+                    expected=expected,
+                    observed=observed,
+                    status=match.status,
+                    confidence=match.confidence,
+                    source="vision",
+                    severity=severity,
                 )
             )
             continue
@@ -117,12 +173,14 @@ def _fuse_connection_evidence(
             items.append(
                 StructuredEvidence(
                     subject=subject,
+                    rule_id=rule_id,
                     relationship="connection",
                     expected=expected,
                     observed=observed,
                     status=EvidenceStatus.UNCERTAIN,
                     confidence=match.confidence,
                     source="vision",
+                    severity=severity,
                 )
             )
             continue
@@ -133,12 +191,14 @@ def _fuse_connection_evidence(
         items.append(
             StructuredEvidence(
                 subject=subject,
+                rule_id=rule_id,
                 relationship="connection",
                 expected=expected,
                 observed=observed,
                 status=EvidenceStatus.OBSERVED,
                 confidence=match.confidence,
                 source="vision",
+                severity=severity,
             )
         )
 
@@ -149,34 +209,54 @@ def _fuse_component_evidence(
     experiment: Experiment, observation: VisualObservation
 ) -> list[StructuredEvidence]:
     items: list[StructuredEvidence] = []
+    rule_id, severity = _component_rule(experiment)
+    structured = {d.label.lower(): d for d in observation.component_observations}
     detected_lower = {d.lower() for d in observation.detected_components}
+    structured_component_mode = bool(observation.component_observations)
 
     for component in experiment.components:
         subject = component
         expected = f"{component} present on breadboard"
-        if component.lower() in detected_lower:
+        detected = structured.get(component.lower())
+        if detected is not None:
+            status = detected.status
+            observed = component if status == EvidenceStatus.OBSERVED else None
+            confidence = detected.confidence
+        elif component.lower() in detected_lower:
+            status = EvidenceStatus.OBSERVED
+            observed = component
+            confidence = None
+        else:
+            status = EvidenceStatus.OCCLUDED if _is_occluded(component, observation) else EvidenceStatus.MISSING
+            observed = None
+            confidence = None
+
+        if status == EvidenceStatus.OBSERVED:
             items.append(
                 StructuredEvidence(
                     subject=subject,
+                    rule_id=rule_id,
                     relationship="component",
                     expected=expected,
-                    observed=component,
-                    status=EvidenceStatus.OBSERVED,
-                    confidence=None,
+                    observed=observed,
+                    status=status,
+                    confidence=confidence,
                     source="vision",
+                    severity=severity if structured_component_mode else None,
                 )
             )
         else:
-            status = EvidenceStatus.OCCLUDED if _is_occluded(component, observation) else EvidenceStatus.MISSING
             items.append(
                 StructuredEvidence(
                     subject=subject,
+                    rule_id=rule_id,
                     relationship="component",
                     expected=expected,
                     observed=None,
                     status=status,
-                    confidence=None,
+                    confidence=confidence,
                     source="vision",
+                    severity=severity if structured_component_mode else None,
                 )
             )
 
@@ -197,18 +277,24 @@ def _fuse_measurement_evidence(
     for expected_measurement in experiment.expected_measurements:
         subject = f"{expected_measurement.sensor} measurement"
         expected = f"{expected_measurement.min_value}-{expected_measurement.max_value} {expected_measurement.unit}"
+        measurement_rule = next(
+            (rule for rule in experiment.validation_rules if rule.rule_type == "measurement" and rule.target == expected_measurement.sensor),
+            None,
+        )
         reading = latest_by_sensor.get(expected_measurement.sensor)
 
         if reading is None:
             items.append(
                 StructuredEvidence(
                     subject=subject,
+                    rule_id=measurement_rule.rule_id if measurement_rule else None,
                     relationship="measurement",
                     expected=expected,
                     observed=None,
                     status=EvidenceStatus.MISSING,
                     confidence=None,
                     source="telemetry",
+                    severity=measurement_rule.severity if measurement_rule else None,
                 )
             )
             continue
@@ -217,6 +303,7 @@ def _fuse_measurement_evidence(
         items.append(
             StructuredEvidence(
                 subject=subject,
+                rule_id=measurement_rule.rule_id if measurement_rule else None,
                 relationship="measurement",
                 expected=expected,
                 observed=f"{reading.value} {reading.unit}{sim_tag}",
@@ -227,6 +314,7 @@ def _fuse_measurement_evidence(
                 status=EvidenceStatus.OBSERVED,
                 confidence=None,
                 source="telemetry",
+                severity=measurement_rule.severity if measurement_rule else None,
             )
         )
 

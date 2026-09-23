@@ -45,9 +45,15 @@ export interface Experiment {
 export interface DetectedConnection {
   from_component: string;
   from_pin: string;
-  to_component: string;
-  to_pin: string;
+  to_component: string | null;
+  to_pin: string | null;
   confidence: number;
+  status: string;
+}
+
+export interface Point2D {
+  x: number;
+  y: number;
 }
 
 export interface BoundingBox {
@@ -60,14 +66,42 @@ export interface BoundingBox {
   status: string;
 }
 
+export interface DetectedComponent {
+  label: string;
+  confidence: number;
+  bounding_box?: BoundingBox | null;
+  status: string;
+}
+
+export interface DetectedPin {
+  component_label: string;
+  pin_label: string;
+  position: Point2D;
+  confidence: number;
+  status: string;
+}
+
+export interface WireEndpoint {
+  wire_id: string;
+  position: Point2D;
+  component_label?: string | null;
+  pin_label?: string | null;
+  confidence: number;
+  status: string;
+}
+
 export interface VisualObservation {
   sufficient_evidence: boolean;
   detected_components: string[];
+  component_observations: DetectedComponent[];
+  detected_pins: DetectedPin[];
+  wire_endpoints: WireEndpoint[];
   detected_connections: DetectedConnection[];
   bounding_boxes: BoundingBox[];
   notes: string;
   backend_used: string;
   simulated: boolean;
+  frame_quality?: number | null;
   timestamp?: string;
 }
 

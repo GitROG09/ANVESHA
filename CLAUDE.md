@@ -107,8 +107,9 @@ reliable detections is a real and expected state, not a bug.
 
 ## Current phase
 
-Phase 2, Objective 1 (structured evidence + evidence fusion) is
-complete as of this session. See `PROJECT_STATUS.md` for the full
-breakdown and the next milestone. Do not start Objective 2 (vision
-evaluation dataset, Arduino integration, Qualcomm integration, frontend
-redesign) without explicit instruction.
+Phase 2, Objective 2 foundation is implemented: structured perception
+contracts, strict provider parsing, labeled test fixtures, deterministic
+evaluation helpers, and camera lifecycle safeguards. Real LDR photographs,
+trained perception, and Qualcomm/QNN execution remain unavailable and must not
+be claimed as completed. See `PROJECT_STATUS.md` and
+`docs/vision_evaluation.md`.

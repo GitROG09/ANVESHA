@@ -1,0 +1,1 @@
+Split manifests are intentionally empty until data exists. Group all frames from one physical setup or capture session into one split. Do not mix related captures across train, validation, and test. Real-photo test records must remain held out until evaluation.

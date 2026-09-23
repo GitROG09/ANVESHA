@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ANVESHA LDR perception annotation",
+  "type": "object",
+  "required": ["image_id", "experiment_id", "provenance", "split", "components", "pins", "wire_endpoints", "connections", "frame"],
+  "properties": {
+    "image_id": {"type": "string"},
+    "experiment_id": {"const": "ldr_001"},
+    "provenance": {"enum": ["synthetic", "test_fixture", "real"]},
+    "split": {"enum": ["train", "validation", "test", "golden"]},
+    "session_id": {"type": "string"},
+    "image_path": {"type": ["string", "null"]},
+    "metadata": {"type": "object", "additionalProperties": true},
+    "frame": {
+      "type": "object",
+      "required": ["usable", "occluded"],
+      "properties": {
+        "usable": {"type": "boolean"},
+        "occluded": {"type": "boolean"},
+        "quality_reason": {"type": "string"}
+      }
+    },
+    "components": {"type": "array"},
+    "pins": {"type": "array"},
+    "wire_endpoints": {"type": "array"},
+    "connections": {"type": "array"}
+  },
+  "additionalProperties": false
+}
