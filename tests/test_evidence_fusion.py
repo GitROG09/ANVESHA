@@ -151,13 +151,20 @@ def test_observed_measurement_evidence():
     assert "512" in meas.observed
 
 
-def test_low_quality_frame_produces_no_structured_evidence():
+def test_low_quality_frame_produces_no_visual_structured_evidence():
     exp = _ldr_experiment()
     obs = VisualObservation(sufficient_evidence=False, notes="too blurry", backend_used="test", frame_quality=0.1)
     bundle = fuse_evidence(exp, obs, [])
     assert bundle.frame_suitable is False
-    assert bundle.structured_evidence == []
     assert bundle.frame_quality == 0.1
+    # No readings were supplied either, so there is no telemetry evidence
+    # to preserve — but the bundle records MISSING measurement evidence
+    # rather than silently having nothing at all.
+    assert all(e.relationship != "connection" for e in bundle.structured_evidence)
+    assert all(e.relationship != "component" for e in bundle.structured_evidence)
+    meas = [e for e in bundle.structured_evidence if e.relationship == "measurement"]
+    assert len(meas) == 1
+    assert meas[0].status == EvidenceStatus.MISSING
 
 
 # ---------------------------------------------------------------------------
@@ -217,3 +224,84 @@ def test_verification_state_transition_deviation_to_pass():
 
     after = verify(exp, _full_observation(), readings)
     assert after.experiment_state == ExperimentState.PASS
+
+
+# ---------------------------------------------------------------------------
+# Telemetry independence: a bad/missing frame must not discard valid
+# telemetry evidence, but telemetry alone can never upgrade the overall
+# result past INSUFFICIENT_EVIDENCE when required visual evidence is
+# unavailable.
+# ---------------------------------------------------------------------------
+
+
+def test_bad_frame_with_real_telemetry_preserves_measurement_evidence():
+    exp = _ldr_experiment()
+    obs = VisualObservation(sufficient_evidence=False, notes="too blurry", backend_used="test", frame_quality=0.15)
+    readings = [SensorReading(sensor="LDR", value=512, unit="ADC", source="arduino", simulated=False)]
+
+    bundle = fuse_evidence(exp, obs, readings)
+    assert bundle.frame_suitable is False
+    assert bundle.frame_quality == 0.15
+    meas = [e for e in bundle.structured_evidence if e.relationship == "measurement"]
+    assert len(meas) == 1
+    assert meas[0].status == EvidenceStatus.OBSERVED
+    assert "512" in meas[0].observed
+    assert bundle.simulated is False
+    # No connection/component evidence — visual perception was not usable.
+    assert all(e.relationship != "connection" for e in bundle.structured_evidence)
+
+    result = verify(exp, obs, readings)
+    assert result.experiment_state == ExperimentState.INSUFFICIENT_EVIDENCE
+    # The real measurement must still show up in the evidence log and
+    # verified steps — telemetry is not discarded just because the camera
+    # failed.
+    assert any("512" in e.summary for e in result.evidence)
+    assert any(s.step_id == "measure_LDR" for s in result.verified_steps)
+
+
+def test_bad_frame_without_telemetry_stays_insufficient_evidence():
+    exp = _ldr_experiment()
+    obs = VisualObservation(sufficient_evidence=False, notes="too dark", backend_used="test", frame_quality=0.05)
+
+    bundle = fuse_evidence(exp, obs, [])
+    assert bundle.frame_suitable is False
+    meas = [e for e in bundle.structured_evidence if e.relationship == "measurement"]
+    assert len(meas) == 1
+    assert meas[0].status == EvidenceStatus.MISSING
+
+    result = verify(exp, obs, [])
+    assert result.experiment_state == ExperimentState.INSUFFICIENT_EVIDENCE
+    assert result.confidence == 0.0
+    assert any(s.step_id == "measure_LDR" for s in result.warnings)
+
+
+def test_good_frame_with_real_telemetry_has_both_evidence_sources():
+    exp = _ldr_experiment()
+    obs = _full_observation()
+    readings = [SensorReading(sensor="LDR", value=512, unit="ADC", source="arduino", simulated=False)]
+
+    bundle = fuse_evidence(exp, obs, readings)
+    assert bundle.frame_suitable is True
+    assert bundle.simulated is False
+    assert any(e.relationship == "connection" for e in bundle.structured_evidence)
+    assert any(e.relationship == "measurement" and e.status == EvidenceStatus.OBSERVED for e in bundle.structured_evidence)
+
+    result = verify(exp, obs, readings)
+    assert result.experiment_state == ExperimentState.PASS
+    assert any(s.step_id == "measure_LDR" for s in result.verified_steps)
+    assert any(s.step_id.startswith("conn_") for s in result.verified_steps)
+
+
+def test_good_frame_with_simulated_telemetry_preserves_simulated_flag():
+    exp = _ldr_experiment()
+    obs = _full_observation()
+    readings = [SensorReading(sensor="LDR", value=512, unit="ADC", source="simulated", simulated=True)]
+
+    bundle = fuse_evidence(exp, obs, readings)
+    assert bundle.simulated is True
+    meas = next(e for e in bundle.structured_evidence if e.relationship == "measurement")
+    assert "SIMULATED" in meas.observed
+
+    result = verify(exp, obs, readings)
+    assert result.experiment_state == ExperimentState.PASS
+    assert any("SIMULATED" in e.summary for e in result.evidence)

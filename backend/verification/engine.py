@@ -247,17 +247,31 @@ def verify(
     bundle = fuse_evidence(experiment, observation, readings)
 
     if not bundle.frame_suitable:
+        # Required visual wiring evidence is unavailable, so the overall
+        # result must stay INSUFFICIENT_EVIDENCE — telemetry can never
+        # compensate for missing connection evidence. But telemetry is an
+        # independent evidence source: any measurement evidence fusion
+        # already collected (real or simulated) must still be surfaced
+        # here, not silently dropped just because the camera failed.
+        meas_verified, meas_failed, meas_warnings, meas_evidence = _rollup_measurements(bundle.structured_evidence)
+        observations = [observation.notes] if observation and observation.notes else [
+            "No visual evidence was provided or the frame did not contain a usable view of the setup."
+        ]
         return VerificationResult(
             experiment_id=experiment.experiment_id,
             experiment_state=ExperimentState.INSUFFICIENT_EVIDENCE,
             confidence=0.0,
-            observations=[observation.notes] if observation and observation.notes else [
-                "No visual evidence was provided or the frame did not contain a usable view of the setup."
-            ],
+            verified_steps=meas_verified,
+            failed_steps=meas_failed,
+            warnings=meas_warnings,
+            observations=observations,
             recommended_actions=[
                 "Reposition the camera so all components and wires are clearly visible.",
                 "Ensure adequate, even lighting on the breadboard.",
-            ],
+            ]
+            + [s.recommended_action for s in meas_failed if s.recommended_action]
+            + [s.recommended_action for s in meas_warnings if s.recommended_action],
+            evidence=meas_evidence,
         )
 
     conn_verified, conn_failed, conn_warnings, conn_evidence = _rollup_connections(bundle.structured_evidence)

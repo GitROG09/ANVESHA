@@ -240,34 +240,39 @@ def fuse_evidence(
 ) -> EvidenceBundle:
     """Combine vision + telemetry + the experiment spec into structured evidence.
 
-    Returns an EvidenceBundle. If the frame itself was not suitable for
-    perception (or no frame was provided at all), the bundle carries no
-    structured evidence — there is nothing trustworthy to fuse — and
-    frame_suitable=False signals the verification engine to report
-    INSUFFICIENT_EVIDENCE outright, rather than silently treating "no
-    evidence" as "nothing wrong".
+    Visual evidence (connections, components) REQUIRES a usable frame — if
+    the frame itself was not suitable for perception (or no frame was
+    provided at all), no connection/component evidence is fused, since
+    there is nothing trustworthy to report there.
+
+    Telemetry is a separate evidence source with its own provenance and is
+    NOT gated on frame quality: a bad or missing camera frame must not
+    discard a real (or explicitly simulated) sensor reading. The bundle
+    always carries whatever measurement evidence exists, tagged
+    accordingly, alongside frame_suitable/frame_quality so the
+    verification engine can still correctly report INSUFFICIENT_EVIDENCE
+    when the required visual wiring evidence is unavailable — telemetry on
+    its own can never compensate for that, but it must remain visible in
+    the evidence bundle and downstream evidence log rather than being
+    silently discarded.
     """
     frame_suitable = observation is not None and observation.sufficient_evidence
     frame_quality = observation.frame_quality if observation is not None else None
     simulated = bool(observation and observation.simulated) or any(r.simulated for r in readings)
 
-    if not frame_suitable:
-        return EvidenceBundle(
-            experiment_id=experiment.experiment_id,
-            frame_suitable=False,
-            frame_quality=frame_quality,
-            structured_evidence=[],
-            simulated=simulated,
-        )
-
     structured_evidence: list[StructuredEvidence] = []
-    structured_evidence += _fuse_connection_evidence(experiment, observation)
-    structured_evidence += _fuse_component_evidence(experiment, observation)
+
+    # Telemetry evidence does not depend on the camera at all — fuse it
+    # regardless of frame_suitable.
     structured_evidence += _fuse_measurement_evidence(experiment, readings)
+
+    if frame_suitable:
+        structured_evidence += _fuse_connection_evidence(experiment, observation)
+        structured_evidence += _fuse_component_evidence(experiment, observation)
 
     return EvidenceBundle(
         experiment_id=experiment.experiment_id,
-        frame_suitable=True,
+        frame_suitable=frame_suitable,
         frame_quality=frame_quality,
         structured_evidence=structured_evidence,
         simulated=simulated,

@@ -13,17 +13,24 @@ made exclusively by the deterministic verification engine
 (`backend/verification/engine.py`), applying fixed rules to structured
 evidence produced by `backend/evidence/fusion.py`.
 
-Two rules follow directly from this and must never be violated:
+Three rules follow directly from this and must never be violated:
 
-1. **No fabrication.** A vision/speech backend that cannot determine
-   something must say so (`MISSING` / `UNCERTAIN` / `OCCLUDED`), never
-   invent a plausible-looking answer because it matches what the
-   experiment expects.
-2. **No silent simulation.** Simulated/demo data must always be tagged
-   `simulated=True` end-to-end (schema, evidence, UI) and must never be
-   used inside a code path that claims to be verifying a real camera
-   frame or a real sensor reading. `/api/demo/*` is the only sanctioned
-   entry point for scripted data.
+- **No fabrication.** A vision/speech backend that cannot determine
+  something must say so (`MISSING` / `UNCERTAIN` / `OCCLUDED`), never
+  invent a plausible-looking answer because it matches what the
+  experiment expects.
+- **No silent simulation.** Simulated/demo data must always be tagged
+  `simulated=True` end-to-end (schema, evidence, UI) and must never be
+  used inside a code path that claims to be verifying a real camera
+  frame or a real sensor reading. `/api/demo/*` is the only sanctioned
+  entry point for scripted data.
+- **Evidence sources are independent.** A bad/missing camera frame must
+  never discard a valid telemetry reading (or vice versa) — each source
+  is fused on its own terms. Telemetry can never *compensate* for
+  missing required visual evidence (the overall state still reports
+  `INSUFFICIENT_EVIDENCE` if wiring can't be confirmed), but it must
+  always remain visible in the `EvidenceBundle` and the verification
+  evidence log.
 
 ## Architecture map
 

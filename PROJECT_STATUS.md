@@ -21,6 +21,46 @@ not exist here — this session implemented Objective 1 from that
 baseline, not by continuing in-progress files. Recording this plainly so
 nobody assumes lost work exists somewhere that needs recovering.
 
+## Architectural correction (this session, after initial Objective 1 review)
+
+`fuse_evidence()` originally discarded **all** structured evidence
+(including telemetry) whenever `frame_suitable=False`. That was wrong:
+telemetry is an independent evidence source and does not depend on the
+camera. Corrected behavior:
+
+- Measurement evidence is now fused from `readings` **unconditionally**,
+  regardless of frame quality/availability.
+- Connection and component evidence still require `frame_suitable=True`
+  — visual claims still need a usable frame, and telemetry can never
+  substitute for missing wiring evidence.
+- `verify()`'s "frame not suitable" branch now rolls up whatever
+  measurement evidence exists (via the same `_rollup_measurements` used
+  in the normal path) into `verified_steps`/`failed_steps`/`warnings`/
+  `evidence`, instead of returning an empty evidence log. The overall
+  `experiment_state` in this branch is still always
+  `INSUFFICIENT_EVIDENCE` — a real, valid measurement does not upgrade
+  the result when the required visual connection evidence is missing —
+  but it is no longer silently dropped from the bundle or the evidence
+  log.
+- `simulated` propagation was verified end-to-end for this path: a
+  simulated reading fused during a bad-frame verification still reports
+  `simulated=True` on both the `EvidenceBundle` and in the resulting
+  evidence summary text.
+
+Added 4 targeted tests in `tests/test_evidence_fusion.py`:
+`test_bad_frame_with_real_telemetry_preserves_measurement_evidence`,
+`test_bad_frame_without_telemetry_stays_insufficient_evidence`,
+`test_good_frame_with_real_telemetry_has_both_evidence_sources`,
+`test_good_frame_with_simulated_telemetry_preserves_simulated_flag`.
+One existing test (`test_low_quality_frame_produces_no_structured_evidence`)
+was renamed/updated to `test_low_quality_frame_produces_no_visual_structured_evidence`
+since its old assertion (`structured_evidence == []`) was exactly the
+behavior being corrected; it now asserts no connection/component evidence
+while still allowing (and checking for) MISSING measurement evidence.
+
+**48 passed, 0 failed** (44 prior + 4 new; net +4 since one test was
+updated in place rather than duplicated).
+
 ## Completed this session
 
 - Added `EvidenceStatus` enum (`OBSERVED / INFERRED / UNCERTAIN /
