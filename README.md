@@ -53,7 +53,7 @@ Qualcomm AI Hub once deployed to real hardware.
 
 | Modality | Target production model | Status in this repo |
 |---|---|---|
-| Vision | Qwen3-VL-4B-Instruct via Qualcomm AI Hub / QNN | Abstraction + device detection implemented; NPU inference not executable in this dev environment (no Snapdragon hardware) — see `docs/ai_models.md` |
+| Vision | Qwen3-VL-4B-Instruct via Qualcomm AI Hub / QNN | Lazy provider foundation and strict adapter path implemented; weights and actual inference unavailable — see `docs/ai_models.md` |
 | Vision (fallback) | OpenCV heuristics (frame quality + region count) | **Real, implemented, tested** |
 | Speech | Whisper-Small (quantized) via Qualcomm AI Hub / QNN, or local fallback | Interface implemented; no model bundled — honestly reports unavailable |
 
@@ -105,7 +105,7 @@ anvesha-ai/
 ├── scripts/
 │   ├── run_tests.sh             single test command
 │   └── arduino/telemetry_sketch.ino
-├── tests/                       pytest suite (83 tests)
+├── tests/                       pytest suite (94 tests)
 ├── assets/
 ├── submission/                  competition submission materials
 ├── README.md
@@ -179,7 +179,7 @@ The Settings screen will then show `Qualcomm NPU` as the active backend.
 bash scripts/run_tests.sh
 ```
 
-Runs the full pytest suite (83 tests: experiment engine, verification,
+Runs the full pytest suite (94 tests: experiment engine, verification,
 evidence fusion, perception adapter, evaluation, telemetry, inference
 backends, API) and the frontend production
 build/type-check in one command.
@@ -198,6 +198,10 @@ Objective 2 perception contracts, labeled test fixtures, and the
 provenance-aware evaluation harness are documented in
 `docs/vision_evaluation.md` and `datasets/ldr/`. No real LDR photographs or
 real-world perception metrics are included.
+
+The Qwen3-VL provider foundation is documented in `docs/ai_models.md`. It is
+not an active runtime: no Qwen3-VL weights have been downloaded and no actual
+Qwen inference has been validated.
 
 ## Safety
 

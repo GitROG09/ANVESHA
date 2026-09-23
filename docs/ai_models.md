@@ -22,6 +22,22 @@ device-detection logic, but its `analyze()` raises `NotImplementedError` in
 this environment (no Snapdragon hardware, no downloadable model weights) —
 see `docs/qualcomm_deployment.md` for exactly what's left to wire up.
 
+## Qwen3-VL provider foundation
+
+`backend/inference/qwen3vl_provider.py` now defines a lazy local
+`Qwen3VLVisionProvider` behind the shared `VisionBackend` interface. It:
+
+- prepares an observation-only prompt for `Qwen/Qwen3-VL-4B-Instruct`,
+- requests structured visual evidence rather than a verdict,
+- uses `local_files_only=True` when loading is eventually enabled, and
+- routes provider responses through `backend/inference/perception_adapter.py`.
+
+The provider is not registered as the active backend. Qwen3-VL weights are not
+installed, actual inference has not been run or validated, and no model
+download is attempted by the provider. `tests/test_qwen3vl_provider.py` is a
+parser/provider-contract and mocked pipeline test, not a Qwen performance or
+real-image perception test.
+
 ## Speech
 
 **Target production model:** Whisper-Small (quantized), for the optional

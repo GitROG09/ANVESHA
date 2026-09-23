@@ -16,6 +16,10 @@ Implemented in the current repository:
   claims, endpoint references, and rejects provider-generated verdicts.
 - Explicit `FixtureVisionBackend` for labeled structured tests only. It is not
   selected as a real inference backend.
+- Lazy Qwen3-VL provider foundation in `backend/inference/qwen3vl_provider.py`:
+  structured observation prompt, local-only loading boundary, strict adapter
+  routing, and explicit unavailable behavior. It is not registered as an
+  active backend and has not run model inference.
 - Rule metadata through evidence fusion and explicit structured component
   claims participating in deterministic verification.
 - Provenance-aware dataset contracts and eight structured golden fixtures in
@@ -30,6 +34,7 @@ Not implemented or available:
 - Real LDR photographs, physical ground truth, or real-world metrics.
 - Trained LDR component/pin/wire perception.
 - Executable Qwen3-VL or Qualcomm QNN inference.
+- Qwen3-VL weights and real-image perception validation.
 - Real camera browser testing in this environment.
 
 ## Note on repository history
@@ -195,7 +200,7 @@ tests) is finished end to end.
   in behavior — all still pass).
 - Objective 2 adds adapter, evaluation, fixture-provider, and end-to-end
   pipeline tests.
-- **83 passed, 0 failed** in the current backend suite.
+- **94 passed, 0 failed** in the current backend suite.
 - Frontend build/type-check remains environment-dependent; Node/npm were not
   available in the implementation shell.
 

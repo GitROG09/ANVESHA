@@ -93,7 +93,7 @@ benchmarks" requirement.
 ## What IS real and tested in this snapshot
 
 - The experiment schema, loader, and all three experiment definitions.
-- The verification engine's rule-based evidence fusion (83 automated tests,
+- The verification engine's rule-based evidence fusion (94 automated tests,
   all passing, covering pass/deviation/insufficient-evidence/before-after
   cases).
 - The FastAPI backend, booted and manually smoke-tested live (not just via
