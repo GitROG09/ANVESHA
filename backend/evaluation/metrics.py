@@ -77,7 +77,7 @@ def evaluate_records(records: list[dict[str, Any]]) -> dict[str, Any]:
         for name in ("components", "pins", "endpoints", "evidence_statuses"):
             expected_key = f"expected_{name}"
             predicted_key = f"predicted_{name}"
-            if expected_key in subset[0] or predicted_key in subset[0]:
+            if any(expected_key in record or predicted_key in record for record in subset):
                 entity_results[name] = entity_metrics(
                     (value for record in subset for value in record.get(expected_key, [])),
                     (value for record in subset for value in record.get(predicted_key, [])),

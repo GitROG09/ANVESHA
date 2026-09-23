@@ -7,3 +7,4 @@ numpy==1.26.4
 pyserial==3.5
 pytest==8.3.3
 httpx==0.27.2
+jsonschema==4.23.0

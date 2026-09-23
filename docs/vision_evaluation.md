@@ -46,6 +46,15 @@ Evaluate supplied labeled records with:
 python scripts/evaluate_vision.py --records path/to/records.json
 ```
 
+Evaluate the repository's structured test fixtures explicitly with:
+
+```text
+python scripts/evaluate_vision.py --golden
+```
+
+This reports under `test_fixture`; it never treats fixture records as real
+photographs or real-world performance.
+
 The harness supports exact connection metrics, state classification metrics,
 false PASS/deviation counts, abstention counts, provenance separation, and
 normalized bounding-box IoU. It does not invent values when a dataset is

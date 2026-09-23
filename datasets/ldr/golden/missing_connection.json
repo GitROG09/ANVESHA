@@ -1,9 +1,1 @@
-{
-  "image_id": null,
-  "experiment_id": "ldr_001",
-  "provenance": "test_fixture",
-  "case": "missing_connection",
-  "expected_state": "INSUFFICIENT_EVIDENCE",
-  "description": "Structured fixture only; no photograph is included.",
-  "connections": []
-}
+{"image_id": null, "experiment_id": "ldr_001", "provenance": "test_fixture", "split": "golden", "session_id": "fixture-missing-connection", "image_path": null, "metadata": {"case": "missing_connection"}, "frame": {"usable": true, "occluded": false}, "components": [], "pins": [], "wire_endpoints": [], "connections": [], "expected_connections": ["LDR OUT->Arduino A0"], "predicted_connections": [], "expected_state": "INSUFFICIENT_EVIDENCE", "predicted_state": "INSUFFICIENT_EVIDENCE"}

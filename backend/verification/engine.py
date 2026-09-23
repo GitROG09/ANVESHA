@@ -42,6 +42,16 @@ from backend.schemas.models import (
 )
 
 
+def _normalised_endpoint(value: str | None) -> str:
+    """Normalize an endpoint for comparison while retaining raw display text."""
+    return " ".join((value or "").strip().lower().split())
+
+
+def _is_definite_failure(item: StructuredEvidence) -> bool:
+    """Only definite, observed contradictions can become rule failures."""
+    return item.status == EvidenceStatus.OBSERVED and item.severity == "deviation"
+
+
 def _rollup_connections(evidence: list[StructuredEvidence]) -> tuple[list[StepResult], list[StepResult], list[StepResult], list[EvidenceItem]]:
     verified: list[StepResult] = []
     failed: list[StepResult] = []
@@ -52,7 +62,7 @@ def _rollup_connections(evidence: list[StructuredEvidence]) -> tuple[list[StepRe
         step_id = "conn_" + item.subject.split(" -> ")[0].replace(" ", "_")
 
         if item.status == EvidenceStatus.OBSERVED:
-            if item.observed == item.expected:
+            if _normalised_endpoint(item.observed) == _normalised_endpoint(item.expected):
                 verified.append(
                     StepResult(
                         step_id=step_id,
@@ -63,9 +73,12 @@ def _rollup_connections(evidence: list[StructuredEvidence]) -> tuple[list[StepRe
                     )
                 )
                 evidence_log.append(
-                    EvidenceItem(source="vision", summary=f"Confirmed {item.subject} (confidence {item.confidence:.0%}).")
+                    EvidenceItem(
+                        source="vision",
+                        summary=f"Confirmed {item.subject}: observed {item.observed} (confidence {item.confidence:.0%}).",
+                    )
                 )
-            else:
+            elif _is_definite_failure(item):
                 failed.append(
                     StepResult(
                         step_id=step_id,
@@ -84,6 +97,24 @@ def _rollup_connections(evidence: list[StructuredEvidence]) -> tuple[list[StepRe
                     EvidenceItem(
                         source="vision",
                         summary=f"Deviation: {item.subject.split(' -> ')[0]} observed at {item.observed}, expected {item.expected}.",
+                    )
+                )
+            else:
+                warnings.append(
+                    StepResult(
+                        step_id=step_id,
+                        title=item.subject,
+                        status="warning",
+                        expected=item.expected,
+                        observed=item.observed or "",
+                        why_it_matters="The observed connection does not satisfy the procedure, but this rule is advisory.",
+                        recommended_action=f"Review the {item.subject.split(' -> ')[0]} connection against {item.expected}.",
+                    )
+                )
+                evidence_log.append(
+                    EvidenceItem(
+                        source="vision",
+                        summary=f"Warning: {item.subject.split(' -> ')[0]} observed at {item.observed}, expected {item.expected}.",
                     )
                 )
             continue
@@ -185,7 +216,7 @@ def _rollup_measurements(evidence: list[StructuredEvidence]) -> tuple[list[StepR
             evidence_log.append(
                 EvidenceItem(source="telemetry", summary=f"{sensor} reading {item.observed} is within expected range.")
             )
-        else:
+        elif item.severity == "deviation":
             failed.append(
                 StepResult(
                     step_id=step_id,
@@ -201,6 +232,24 @@ def _rollup_measurements(evidence: list[StructuredEvidence]) -> tuple[list[StepR
                 EvidenceItem(
                     source="telemetry",
                     summary=f"{sensor} reading {item.observed} is OUTSIDE expected range [{item.expected}].",
+                )
+            )
+        else:
+            warnings.append(
+                StepResult(
+                    step_id=step_id,
+                    title=item.subject,
+                    status="warning",
+                    expected=item.expected,
+                    observed=item.observed or "",
+                    why_it_matters="The measurement is outside the expected range, but this rule is advisory.",
+                    recommended_action="Recheck wiring and component values, then take a new reading.",
+                )
+            )
+            evidence_log.append(
+                EvidenceItem(
+                    source="telemetry",
+                    summary=f"Warning: {sensor} reading {item.observed} is outside expected range [{item.expected}].",
                 )
             )
 

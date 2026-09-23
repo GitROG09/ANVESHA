@@ -1,9 +1,1 @@
-{
-  "image_id": null,
-  "experiment_id": "ldr_001",
-  "provenance": "test_fixture",
-  "case": "poor_quality",
-  "expected_state": "INSUFFICIENT_EVIDENCE",
-  "description": "Structured fixture only; no photograph is included.",
-  "frame": {"sufficient_evidence": false, "frame_quality": 0.10}
-}
+{"image_id": null, "experiment_id": "ldr_001", "provenance": "test_fixture", "split": "golden", "session_id": "fixture-poor-quality", "image_path": null, "metadata": {"case": "poor_quality"}, "frame": {"usable": false, "occluded": false, "quality_reason": "too blurry"}, "components": [], "pins": [], "wire_endpoints": [], "connections": [], "expected_state": "INSUFFICIENT_EVIDENCE", "predicted_state": "INSUFFICIENT_EVIDENCE"}

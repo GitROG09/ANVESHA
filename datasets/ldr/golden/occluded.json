@@ -1,9 +1,1 @@
-{
-  "image_id": null,
-  "experiment_id": "ldr_001",
-  "provenance": "test_fixture",
-  "case": "occluded",
-  "expected_state": "WARNING",
-  "description": "Structured fixture only; no photograph is included.",
-  "components": [{"label": "LDR", "confidence": 0.60, "status": "OCCLUDED"}]
-}
+{"image_id": null, "experiment_id": "ldr_001", "provenance": "test_fixture", "split": "golden", "session_id": "fixture-occluded", "image_path": null, "metadata": {"case": "occluded"}, "frame": {"usable": true, "occluded": true}, "components": [{"label": "LDR", "confidence": 0.60, "status": "OCCLUDED"}], "pins": [], "wire_endpoints": [], "connections": [], "expected_state": "WARNING", "predicted_state": "WARNING"}

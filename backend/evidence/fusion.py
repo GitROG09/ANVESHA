@@ -58,15 +58,22 @@ def _find_best_match(
     return max(candidates, key=lambda d: d.confidence)
 
 
-def _connection_rule(experiment: Experiment, from_component: str, to_component: str) -> tuple[str | None, str | None]:
+def _connection_rule(
+    experiment: Experiment,
+    from_component: str,
+    from_pin: str,
+    to_component: str,
+    to_pin: str,
+) -> tuple[str | None, str | None]:
+    power_pins = {"vcc", "5v", "gnd", "ground"}
+    if from_pin.strip().lower() in power_pins or to_pin.strip().lower() in power_pins:
+        for rule in experiment.validation_rules:
+            if rule.rule_type == "connection" and rule.target and rule.target.lower() == "power":
+                return rule.rule_id, rule.severity
     target = f"{from_component}->{to_component}".lower()
     for rule in experiment.validation_rules:
         if rule.rule_type == "connection" and rule.target and rule.target.lower() == target:
             return rule.rule_id, rule.severity
-    if to_component.lower() in {"arduino", "power"}:
-        for rule in experiment.validation_rules:
-            if rule.rule_type == "connection" and rule.target and rule.target.lower() == "power":
-                return rule.rule_id, rule.severity
     return None, None
 
 
@@ -99,7 +106,13 @@ def _fuse_connection_evidence(
     for conn in experiment.connections:
         subject = f"{conn.from_component} {conn.from_pin} -> {conn.to_component} {conn.to_pin}"
         expected = f"{conn.to_component} {conn.to_pin}"
-        rule_id, severity = _connection_rule(experiment, conn.from_component, conn.to_component)
+        rule_id, severity = _connection_rule(
+            experiment,
+            conn.from_component,
+            conn.from_pin,
+            conn.to_component,
+            conn.to_pin,
+        )
         match = _find_best_match(conn.from_component, conn.from_pin, observation.detected_connections)
 
         if match is None:

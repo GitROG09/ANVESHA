@@ -1,9 +1,1 @@
-{
-  "image_id": null,
-  "experiment_id": "ldr_001",
-  "provenance": "test_fixture",
-  "case": "missing_component",
-  "expected_state": "DEVIATION",
-  "description": "Structured fixture only; no photograph is included.",
-  "components": [{"label": "LDR", "confidence": 0.98, "status": "MISSING"}]
-}
+{"image_id": null, "experiment_id": "ldr_001", "provenance": "test_fixture", "split": "golden", "session_id": "fixture-missing-component", "image_path": null, "metadata": {"case": "missing_component"}, "frame": {"usable": true, "occluded": false}, "components": [{"label": "LDR", "confidence": 0.98, "status": "MISSING"}], "pins": [], "wire_endpoints": [], "connections": [], "expected_components": ["LDR"], "predicted_components": [], "expected_state": "DEVIATION", "predicted_state": "DEVIATION"}

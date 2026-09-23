@@ -44,6 +44,25 @@ def test_fixture_provider_wrong_a1_reaches_deviation():
     assert result.experiment_state == "DEVIATION"
 
 
+def test_connection_comparison_is_case_insensitive_but_preserves_display_value():
+    connections = _full_connections()
+    connections[0]["to_component"] = "arduino"
+    connections[0]["to_pin"] = "a0"
+    observation = FixtureVisionBackend(_payload(connections=connections)).analyze(b"fixture", experiment)
+    result = verify(experiment, observation, _reading())
+    assert result.experiment_state == "PASS"
+    assert any("arduino a0" in item.summary for item in result.evidence)
+
+
+def test_case_insensitive_comparison_does_not_hide_wrong_pin():
+    connections = _full_connections("A1")
+    connections[0]["to_component"] = "arduino"
+    connections[0]["to_pin"] = "a1"
+    observation = FixtureVisionBackend(_payload(connections=connections)).analyze(b"fixture", experiment)
+    result = verify(experiment, observation, _reading())
+    assert result.experiment_state == "DEVIATION"
+
+
 def test_unknown_endpoint_cannot_produce_pass():
     connections = _full_connections()
     connections[0] = {
@@ -62,6 +81,26 @@ def test_explicit_missing_component_is_rule_backed():
     result = verify(experiment, observation, _reading())
     assert result.experiment_state == "DEVIATION"
     assert any(step.step_id == "component_LDR" for step in result.failed_steps)
+
+
+def test_warning_connection_rule_does_not_become_deviation():
+    connections = _full_connections()
+    connections[1]["to_pin"] = "GND"
+    observation = FixtureVisionBackend(_payload(connections=connections)).analyze(b"fixture", experiment)
+    result = verify(experiment, observation, _reading())
+    assert result.experiment_state == "WARNING"
+    assert not any(step.title.startswith("LDR VCC") for step in result.failed_steps)
+
+
+def test_warning_measurement_rule_does_not_become_deviation():
+    warning_experiment = experiment.model_copy(deep=True)
+    for rule in warning_experiment.validation_rules:
+        if rule.rule_id == "r_measurement_range":
+            rule.severity = "warning"
+    observation = FixtureVisionBackend(_payload()).analyze(b"fixture", warning_experiment)
+    result = verify(warning_experiment, observation, [SensorReading(sensor="LDR", value=999, unit="ADC")])
+    assert result.experiment_state == "WARNING"
+    assert any(step.step_id == "measure_LDR" for step in result.warnings)
 
 
 def test_fallback_observation_remains_non_perceptual():
